@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GeminiOS v12.0 | Firebase Live</title>
+    <title>GeminiOS v12.0 | NOU Management</title>
     <style>
         :root {
             --accent: #00d4ff;
@@ -56,8 +56,12 @@
         #clock { margin-left: auto; color: white; font-size: 14px; }
         .online-count { font-size: 10px; background: var(--success); color: white; padding: 2px 6px; border-radius: 10px; margin-left: 10px; }
         
+        /* TABLE & BUTTONS */
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #eee; }
+        .del-btn { background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; }
+        .del-btn:hover { opacity: 0.8; }
+        input { border: 1px solid #ccc; outline: none; }
     </style>
 </head>
 <body>
@@ -97,11 +101,12 @@
             <div class="win-close" onclick="closeApp('nou-app')"></div>
         </div>
         <div class="nou-body" style="padding:20px; overflow-y: auto; height: 440px;">
-            <h3>Korisnici & Status</h3>
-            <div id="admin-tools" style="display:none; margin-bottom:15px; background:#f0f0f0; padding:10px; border-radius:8px;">
-                 <input type="text" id="new-user-name" placeholder="User" style="width:80px;">
-                 <input type="text" id="new-user-pass" placeholder="Pass" style="width:80px;">
-                 <button id="add-user-btn">Dodaj</button>
+            <h3>Korisnici & Kontrola</h3>
+            <div id="admin-tools" style="display:none; margin-bottom:20px; background:#f9f9f9; padding:15px; border-radius:8px; border: 1px solid #ddd;">
+                 <label style="display:block; font-size:11px; margin-bottom:5px;">DODAJ NOVOG KORISNIKA:</label>
+                 <input type="text" id="new-user-name" placeholder="User" style="width:100px; padding:5px;">
+                 <input type="text" id="new-user-pass" placeholder="Pass" style="width:100px; padding:5px;">
+                 <button id="add-user-btn" style="padding:5px 15px; background:var(--success); color:white; border:none; cursor:pointer; border-radius:4px;">+ Dodaj</button>
             </div>
             <table id="user-table"></table>
         </div>
@@ -110,13 +115,12 @@
     <div id="taskbar">
         <div id="start-btn">♊</div>
         <div style="margin-left:15px; color:white; font-size:12px;"><b id="taskbar-user"></b></div>
-        <div class="online-count" id="live-count">Učitavanje...</div>
+        <div class="online-count" id="live-count">...</div>
         <div id="clock">00:00:00</div>
     </div>
 </div>
 
 <script type="module">
-    // Firebase Imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getDatabase, ref, set, push, onValue, update, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
@@ -136,8 +140,9 @@
 
     let userDB = {};
     let sessionUser = null;
+    let onlineData = {};
 
-    // --- LOGIKA PRIJAVE ---
+    // LOGIN LOGIKA
     window.handleLogin = () => {
         const u = document.getElementById('user-in').value;
         const p = document.getElementById('pass-in').value;
@@ -148,7 +153,7 @@
             bootOS();
             updateStatus(true);
         } else {
-            alert("Neispravan username ili lozinka!");
+            alert("Greška: Korisnik ne postoji ili je lozinka pogrešna.");
         }
     };
 
@@ -161,9 +166,7 @@
         }
     }
 
-    // --- REALTIME SINHRONIZACIJA ---
-    
-    // 1. Slušaj korisnike
+    // FIREBASE SINHRONIZACIJA
     onValue(ref(db, 'users'), (snapshot) => {
         userDB = snapshot.val() || { "admin": { pass: "admin123", role: "admin" } };
         const active = localStorage.getItem('os_active_session');
@@ -175,7 +178,6 @@
         renderUserList();
     });
 
-    // 2. Slušaj Chat
     onValue(ref(db, 'chat'), (snapshot) => {
         const messages = snapshot.val() ? Object.values(snapshot.val()) : [];
         const box = document.getElementById('chat-messages');
@@ -188,19 +190,18 @@
         box.scrollTop = box.scrollHeight;
     });
 
-    // 3. Slušaj Online Status
     onValue(ref(db, 'online'), (snapshot) => {
-        const statuses = snapshot.val() || {};
+        onlineData = snapshot.val() || {};
         const now = Date.now();
         let count = 0;
-        for (let u in statuses) {
-            if (now - statuses[u] < 20000) count++;
+        for (let u in onlineData) {
+            if (now - onlineData[u] < 20000) count++;
         }
         document.getElementById('live-count').innerText = `${count} Online`;
-        renderUserList(statuses);
+        renderUserList();
     });
 
-    // --- FUNKCIJE ---
+    // SISTEMSKE FUNKCIJE
     function updateStatus(online) {
         if (!sessionUser) return;
         const sRef = ref(db, 'online/' + sessionUser);
@@ -221,19 +222,52 @@
         input.value = '';
     };
 
-    function renderUserList(onlineData = {}) {
+    // RENDER TABELE SA OPCIJOM BRISANJA
+    function renderUserList() {
         const table = document.getElementById('user-table');
-        let html = '<tr><th>Korisnik</th><th>Status</th></tr>';
+        if(!table) return;
+        const isAdmin = (userDB[sessionUser] && userDB[sessionUser].role === 'admin');
         const now = Date.now();
+
+        let html = '<tr><th>Korisnik</th><th>Status</th><th>Akcija</th></tr>';
+        
         Object.keys(userDB).forEach(u => {
             const isOnline = (now - (onlineData[u] || 0) < 20000);
+            const statusHtml = isOnline ? '<b style="color:green">● Online</b>' : '<span style="color:gray">Offline</span>';
+            
+            // Samo admin vidi dugme za brisanje i ne može obrisati samog sebe
+            let actionHtml = '-';
+            if (isAdmin && u !== sessionUser && u !== 'admin') {
+                actionHtml = `<button class="del-btn" onclick="deleteUser('${u}')">Ukloni</button>`;
+            }
+
             html += `<tr>
                 <td>${u} ${u === sessionUser ? '(Vi)' : ''}</td>
-                <td>${isOnline ? '<b style="color:green">● Online</b>' : '<span style="color:gray">Offline</span>'}</td>
+                <td>${statusHtml}</td>
+                <td>${actionHtml}</td>
             </tr>`;
         });
         table.innerHTML = html;
     }
+
+    // BRISANJE I DODAVANJE
+    window.deleteUser = (username) => {
+        if (confirm(`Da li ste sigurni da želite da obrišete korisnika: ${username}?`)) {
+            remove(ref(db, 'users/' + username));
+        }
+    };
+
+    window.addUser = () => {
+        const n = document.getElementById('new-user-name').value.trim();
+        const p = document.getElementById('new-user-pass').value.trim();
+        if (n && p) {
+            update(ref(db, 'users/' + n), { pass: p, role: 'user' });
+            document.getElementById('new-user-name').value = '';
+            document.getElementById('new-user-pass').value = '';
+        } else {
+            alert("Popunite oba polja!");
+        }
+    };
 
     window.logout = () => {
         updateStatus(false);
@@ -241,17 +275,12 @@
         location.reload();
     };
 
-    // UI Event Listeners
+    // EVENT LISTENERS
     document.getElementById('login-btn').onclick = window.handleLogin;
     document.getElementById('send-btn').onclick = window.sendChatMessage;
-    document.getElementById('add-user-btn').onclick = () => {
-        const n = document.getElementById('new-user-name').value;
-        const p = document.getElementById('new-user-pass').value;
-        if (n && p) update(ref(db, 'users/' + n), { pass: p, role: 'user' });
-    };
+    document.getElementById('add-user-btn').onclick = window.addUser;
     document.getElementById('chat-input').onkeypress = (e) => { if(e.key === 'Enter') window.sendChatMessage(); };
 
-    // Sistemske funkcije (Drag & UI)
     window.openApp = (id) => { document.getElementById(id).style.display = 'flex'; };
     window.closeApp = (id) => { document.getElementById(id).style.display = 'none'; };
 
@@ -259,7 +288,7 @@
         document.getElementById('clock').innerText = new Date().toLocaleTimeString(); 
     }, 1000);
 
-    // Draggable logika
+    // Draggable
     document.querySelectorAll('.window-header').forEach(h => {
         h.onmousedown = (e) => {
             let win = h.parentElement;
