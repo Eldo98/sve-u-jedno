@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GeminiOS v12.0 | NOU Management</title>
+    <title>GeminiOS v12.0 | NOU Management Cloud</title>
     <style>
         :root {
             --accent: #00d4ff;
@@ -28,6 +28,7 @@
             display: flex; justify-content: center; align-items: center; z-index: 999999;
         }
         .login-box { background: var(--glass); padding: 40px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.1); text-align: center; color: white; width: 350px; }
+        .login-box input { width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:none; outline:none; }
 
         /* DESKTOP */
         #main-os { display: none; height: 100vh; width: 100vw; }
@@ -46,9 +47,9 @@
 
         /* CHAT UI */
         #chat-messages { flex-grow: 1; padding: 15px; overflow-y: auto; background: #fdfdfd; display: flex; flex-direction: column; gap: 10px; height: 300px; }
-        .msg { padding: 8px 12px; border-radius: 10px; max-width: 80%; font-size: 13px; position: relative; }
-        .msg-other { background: #eee; align-self: flex-start; color: #333; }
-        .msg-me { background: var(--accent); color: black; align-self: flex-end; }
+        .msg { padding: 8px 12px; border-radius: 10px; max-width: 80%; font-size: 13px; color: #333; }
+        .msg-other { background: #eee; align-self: flex-start; }
+        .msg-me { background: var(--accent); align-self: flex-end; }
 
         /* TASKBAR */
         #taskbar { position: fixed; bottom: 0; width: 100%; height: 45px; background: var(--taskbar); backdrop-filter: blur(20px); display: flex; align-items: center; padding: 0 15px; z-index: 1000000; }
@@ -56,12 +57,10 @@
         #clock { margin-left: auto; color: white; font-size: 14px; }
         .online-count { font-size: 10px; background: var(--success); color: white; padding: 2px 6px; border-radius: 10px; margin-left: 10px; }
         
-        /* TABLE & BUTTONS */
+        /* TABLE */
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         th, td { text-align: left; padding: 10px; border-bottom: 1px solid #eee; }
-        .del-btn { background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; }
-        .del-btn:hover { opacity: 0.8; }
-        input { border: 1px solid #ccc; outline: none; }
+        .del-btn { background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -69,10 +68,11 @@
 <div id="login-screen">
     <div class="login-box">
         <div style="font-size: 60px;">♊</div>
-        <h2>NOU OS</h2>
-        <input type="text" id="user-in" placeholder="Username" style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px;">
-        <input type="password" id="pass-in" placeholder="Password" style="width:100%; padding:12px; margin-bottom:20px; border-radius:8px;">
-        <button id="login-btn" style="width:100%; padding:12px; border-radius:8px; background:var(--accent); font-weight:bold; cursor:pointer;">ULAZ</button>
+        <h2>NOU OS Cloud</h2>
+        <input type="text" id="user-in" placeholder="Korisničko ime">
+        <input type="password" id="pass-in" placeholder="Lozinka">
+        <button id="login-btn" style="width:100%; padding:12px; border-radius:8px; background:var(--accent); font-weight:bold; cursor:pointer; border:none;">PRIJAVA</button>
+        <p style="font-size: 10px; color: #aaa; margin-top: 15px;">Default: admin / admin123</p>
     </div>
 </div>
 
@@ -84,29 +84,22 @@
     </div>
 
     <div id="chat-win" class="window" style="width: 400px; height: 500px; left: 500px; top: 100px;">
-        <div class="window-header">
-            <span class="win-title">💬 Chat Uživo</span>
-            <div class="win-close" onclick="closeApp('chat-win')"></div>
-        </div>
+        <div class="window-header"><span class="win-title">💬 Chat</span><div class="win-close" onclick="closeApp('chat-win')"></div></div>
         <div id="chat-messages"></div>
-        <div style="padding: 10px; border-top: 1px solid #eee; display: flex; gap: 10px;">
+        <div style="padding: 10px; border-top: 1px solid #eee; display: flex; gap: 5px;">
             <input type="text" id="chat-input" placeholder="Poruka..." style="flex-grow:1; padding:8px;">
             <button id="send-btn" style="padding:8px 15px; background:var(--accent); border:none; cursor:pointer;">></button>
         </div>
     </div>
 
-    <div id="nou-app" class="window" style="width: 550px; height: 500px; left: 50px; top: 50px;">
-        <div class="window-header">
-            <span class="win-title">🏢 NOU Management</span>
-            <div class="win-close" onclick="closeApp('nou-app')"></div>
-        </div>
-        <div class="nou-body" style="padding:20px; overflow-y: auto; height: 440px;">
-            <h3>Korisnici & Kontrola</h3>
-            <div id="admin-tools" style="display:none; margin-bottom:20px; background:#f9f9f9; padding:15px; border-radius:8px; border: 1px solid #ddd;">
-                 <label style="display:block; font-size:11px; margin-bottom:5px;">DODAJ NOVOG KORISNIKA:</label>
-                 <input type="text" id="new-user-name" placeholder="User" style="width:100px; padding:5px;">
-                 <input type="text" id="new-user-pass" placeholder="Pass" style="width:100px; padding:5px;">
-                 <button id="add-user-btn" style="padding:5px 15px; background:var(--success); color:white; border:none; cursor:pointer; border-radius:4px;">+ Dodaj</button>
+    <div id="nou-app" class="window" style="width: 500px; height: 450px; left: 50px; top: 50px;">
+        <div class="window-header"><span class="win-title">🏢 NOU Hub</span><div class="win-close" onclick="closeApp('nou-app')"></div></div>
+        <div style="padding:20px; overflow-y:auto;">
+            <div id="admin-tools" style="display:none; background:#f4f4f4; padding:15px; border-radius:8px; margin-bottom:15px;">
+                <b style="font-size:12px;">DODAJ KORISNIKA:</b><br>
+                <input type="text" id="new-user-name" placeholder="User" style="width:80px;">
+                <input type="text" id="new-user-pass" placeholder="Pass" style="width:80px;">
+                <button id="add-user-btn" style="background:var(--success); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">+</button>
             </div>
             <table id="user-table"></table>
         </div>
@@ -115,7 +108,7 @@
     <div id="taskbar">
         <div id="start-btn">♊</div>
         <div style="margin-left:15px; color:white; font-size:12px;"><b id="taskbar-user"></b></div>
-        <div class="online-count" id="live-count">...</div>
+        <div class="online-count" id="live-count">Spajanje...</div>
         <div id="clock">00:00:00</div>
     </div>
 </div>
@@ -124,6 +117,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getDatabase, ref, set, push, onValue, update, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
+    // TVOJA KONFIGURACIJA
     const firebaseConfig = {
         apiKey: "AIzaSyAoPo3Dj5yoH4sQeTScWZce-jDDpkDPMt8",
         authDomain: "nou-management.firebaseapp.com",
@@ -142,10 +136,32 @@
     let sessionUser = null;
     let onlineData = {};
 
-    // LOGIN LOGIKA
+    // --- KLJUČNA POPRAVKA: INICIJALIZACIJA BAZE I KORISNIKA ---
+    onValue(ref(db, 'users'), (snapshot) => {
+        const data = snapshot.val();
+        
+        if (!data) {
+            // Ako je baza prazna, napravi admina
+            console.log("Inicijalizujem admin nalog...");
+            set(ref(db, 'users/admin'), { pass: "admin123", role: "admin" });
+            userDB = { "admin": { pass: "admin123", role: "admin" } };
+        } else {
+            userDB = data;
+        }
+
+        // Proveri automatsku prijavu
+        const saved = localStorage.getItem('os_active_session');
+        if (saved && userDB[saved] && !sessionUser) {
+            sessionUser = saved;
+            bootOS();
+            updateStatus(true);
+        }
+        renderUserList();
+    });
+
     window.handleLogin = () => {
-        const u = document.getElementById('user-in').value;
-        const p = document.getElementById('pass-in').value;
+        const u = document.getElementById('user-in').value.trim();
+        const p = document.getElementById('pass-in').value.trim();
         
         if (userDB[u] && userDB[u].pass === p) {
             sessionUser = u;
@@ -153,7 +169,7 @@
             bootOS();
             updateStatus(true);
         } else {
-            alert("Greška: Korisnik ne postoji ili je lozinka pogrešna.");
+            alert("Neispravna lozinka ili korisnik ne postoji!");
         }
     };
 
@@ -166,30 +182,7 @@
         }
     }
 
-    // FIREBASE SINHRONIZACIJA
-    onValue(ref(db, 'users'), (snapshot) => {
-        userDB = snapshot.val() || { "admin": { pass: "admin123", role: "admin" } };
-        const active = localStorage.getItem('os_active_session');
-        if (active && userDB[active] && !sessionUser) {
-            sessionUser = active;
-            bootOS();
-            updateStatus(true);
-        }
-        renderUserList();
-    });
-
-    onValue(ref(db, 'chat'), (snapshot) => {
-        const messages = snapshot.val() ? Object.values(snapshot.val()) : [];
-        const box = document.getElementById('chat-messages');
-        box.innerHTML = messages.map(m => `
-            <div class="msg ${m.sender === sessionUser ? 'msg-me' : 'msg-other'}">
-                <small style="display:block; font-size:9px; opacity:0.7">${m.sender}</small>
-                ${m.text}
-            </div>
-        `).join('');
-        box.scrollTop = box.scrollHeight;
-    });
-
+    // --- ONLINE STATUS ---
     onValue(ref(db, 'online'), (snapshot) => {
         onlineData = snapshot.val() || {};
         const now = Date.now();
@@ -201,71 +194,65 @@
         renderUserList();
     });
 
-    // SISTEMSKE FUNKCIJE
     function updateStatus(online) {
         if (!sessionUser) return;
         const sRef = ref(db, 'online/' + sessionUser);
         if (online) set(sRef, Date.now());
         else remove(sRef);
     }
-
     setInterval(() => updateStatus(true), 10000);
 
-    window.sendChatMessage = () => {
-        const input = document.getElementById('chat-input');
-        if (!input.value.trim()) return;
-        push(ref(db, 'chat'), {
-            sender: sessionUser,
-            text: input.value,
-            timestamp: serverTimestamp()
-        });
-        input.value = '';
+    // --- CHAT ---
+    onValue(ref(db, 'chat'), (snapshot) => {
+        const chatData = snapshot.val() ? Object.values(snapshot.val()) : [];
+        const box = document.getElementById('chat-messages');
+        box.innerHTML = chatData.map(m => `
+            <div class="msg ${m.sender === sessionUser ? 'msg-me' : 'msg-other'}">
+                <small style="display:block; font-size:9px; opacity:0.6">${m.sender}</small>
+                ${m.text}
+            </div>
+        `).join('');
+        box.scrollTop = box.scrollHeight;
+    });
+
+    window.sendChat = () => {
+        const inp = document.getElementById('chat-input');
+        if (!inp.value.trim()) return;
+        push(ref(db, 'chat'), { sender: sessionUser, text: inp.value, time: serverTimestamp() });
+        inp.value = '';
     };
 
-    // RENDER TABELE SA OPCIJOM BRISANJA
+    // --- USER LIST & ACTIONS ---
     function renderUserList() {
         const table = document.getElementById('user-table');
         if(!table) return;
-        const isAdmin = (userDB[sessionUser] && userDB[sessionUser].role === 'admin');
+        const isAdmin = userDB[sessionUser]?.role === 'admin';
         const now = Date.now();
 
         let html = '<tr><th>Korisnik</th><th>Status</th><th>Akcija</th></tr>';
-        
         Object.keys(userDB).forEach(u => {
             const isOnline = (now - (onlineData[u] || 0) < 20000);
-            const statusHtml = isOnline ? '<b style="color:green">● Online</b>' : '<span style="color:gray">Offline</span>';
-            
-            // Samo admin vidi dugme za brisanje i ne može obrisati samog sebe
-            let actionHtml = '-';
-            if (isAdmin && u !== sessionUser && u !== 'admin') {
-                actionHtml = `<button class="del-btn" onclick="deleteUser('${u}')">Ukloni</button>`;
-            }
-
+            let btn = isAdmin && u !== 'admin' && u !== sessionUser ? `<button class="del-btn" onclick="removeUser('${u}')">X</button>` : '-';
             html += `<tr>
-                <td>${u} ${u === sessionUser ? '(Vi)' : ''}</td>
-                <td>${statusHtml}</td>
-                <td>${actionHtml}</td>
+                <td>${u}</td>
+                <td style="color:${isOnline ? 'green' : 'gray'}">${isOnline ? '● Online' : 'Offline'}</td>
+                <td>${btn}</td>
             </tr>`;
         });
         table.innerHTML = html;
     }
 
-    // BRISANJE I DODAVANJE
-    window.deleteUser = (username) => {
-        if (confirm(`Da li ste sigurni da želite da obrišete korisnika: ${username}?`)) {
-            remove(ref(db, 'users/' + username));
-        }
+    window.removeUser = (username) => {
+        if(confirm(`Obrisati korisnika ${username}?`)) remove(ref(db, 'users/' + username));
     };
 
     window.addUser = () => {
         const n = document.getElementById('new-user-name').value.trim();
         const p = document.getElementById('new-user-pass').value.trim();
-        if (n && p) {
-            update(ref(db, 'users/' + n), { pass: p, role: 'user' });
+        if(n && p) {
+            set(ref(db, 'users/' + n), { pass: p, role: 'user' });
             document.getElementById('new-user-name').value = '';
             document.getElementById('new-user-pass').value = '';
-        } else {
-            alert("Popunite oba polja!");
         }
     };
 
@@ -275,18 +262,17 @@
         location.reload();
     };
 
-    // EVENT LISTENERS
+    // EVENT BINDING
     document.getElementById('login-btn').onclick = window.handleLogin;
-    document.getElementById('send-btn').onclick = window.sendChatMessage;
+    document.getElementById('send-btn').onclick = window.sendChat;
     document.getElementById('add-user-btn').onclick = window.addUser;
-    document.getElementById('chat-input').onkeypress = (e) => { if(e.key === 'Enter') window.sendChatMessage(); };
+    document.getElementById('chat-input').onkeypress = (e) => e.key === 'Enter' && window.sendChat();
 
-    window.openApp = (id) => { document.getElementById(id).style.display = 'flex'; };
-    window.closeApp = (id) => { document.getElementById(id).style.display = 'none'; };
+    // WINDOW UI
+    window.openApp = (id) => document.getElementById(id).style.display = 'flex';
+    window.closeApp = (id) => document.getElementById(id).style.display = 'none';
 
-    setInterval(() => { 
-        document.getElementById('clock').innerText = new Date().toLocaleTimeString(); 
-    }, 1000);
+    setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
 
     // Draggable
     document.querySelectorAll('.window-header').forEach(h => {
@@ -299,6 +285,5 @@
         }
     });
 </script>
-
 </body>
 </html>
