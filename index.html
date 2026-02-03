@@ -1,167 +1,76 @@
-<!DOCTYPE html>
-<html lang="sr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GeminiOS v12.0 | Live Status</title>
-    <style id="os-dynamic-css">
-        :root {
-            --accent: #00d4ff;
-            --glass: rgba(255, 255, 255, 0.1);
-            --win-bg: #ffffff;
-            --taskbar: rgba(0, 0, 0, 0.95);
-            --os-font: 'Segoe UI', sans-serif;
-            --nou-blue: #1a2a3a;
-            --nou-gold: #c9a050;
-            --danger: #e74c3c;
-            --success: #27ae60;
-        }
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        * { box-sizing: border-box; font-family: var(--os-font); user-select: none; }
-        body { 
-            margin: 0; padding: 0; height: 100vh; overflow: hidden;
-            background: #111 no-repeat center center fixed; background-size: cover; 
-            transition: 0.5s;
-        }
+    const firebaseConfig = {
+        apiKey: "AIzaSyAoPo3Dj5yoH4sQeTScWZce-jDDpkDPMt8",
+        authDomain: "nou-management.firebaseapp.com",
+        databaseURL: "https://nou-management-default-rtdb.firebaseio.com",
+        projectId: "nou-management",
+        storageBucket: "nou-management.firebasestorage.app",
+        messagingSenderId: "1098791447574",
+        appId: "1:1098791447574:web:6e4c666d302055658c9937",
+        measurementId: "G-0MTKC7CZRJ"
+    };
 
-        /* --- LOGIN --- */
-        #login-screen {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(25px);
-            display: flex; justify-content: center; align-items: center; z-index: 999999;
-        }
-        .login-box { background: var(--glass); padding: 40px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.1); text-align: center; color: white; width: 350px; }
+    // Inicijalizacija
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-        /* --- DESKTOP --- */
-        #main-os { display: none; height: 100vh; width: 100vw; }
-        #desktop { height: calc(100vh - 45px); padding: 25px; display: flex; flex-direction: column; flex-wrap: wrap; gap: 20px; align-content: flex-start; }
-        
-        .icon { width: 95px; text-align: center; color: white; cursor: pointer; transition: 0.2s; }
-        .icon:hover { transform: translateY(-5px); }
-        .icon span { font-size: 50px; display: block; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.6)); }
-        .icon label { font-size: 12px; margin-top: 5px; display: block; text-shadow: 1px 1px 3px #000; font-weight: 500; }
-
-        /* --- WINDOWS --- */
-        .window { position: absolute; background: var(--win-bg); border-radius: 12px; box-shadow: 0 25px 70px rgba(0,0,0,0.7); display: none; flex-direction: column; overflow: hidden; border: 1px solid rgba(0,0,0,0.1); }
-        .window-header { background: #f1f1f1; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; cursor: move; border-bottom: 1px solid #ddd; }
-        .win-title { font-size: 13px; font-weight: 700; color: #333; }
-        .win-close { width: 14px; height: 14px; border-radius: 50%; background: #ff5f56; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); }
-
-        /* --- CHAT UI --- */
-        #chat-messages { flex-grow: 1; padding: 15px; overflow-y: auto; background: #fdfdfd; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 8px 12px; border-radius: 10px; max-width: 80%; font-size: 13px; position: relative; }
-        .msg-other { background: #eee; align-self: flex-start; }
-        .msg-me { background: var(--accent); color: black; align-self: flex-end; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; background: #bbb; }
-        .status-online { background: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
-
-        /* --- TASKBAR --- */
-        #taskbar { position: fixed; bottom: 0; width: 100%; height: 45px; background: var(--taskbar); backdrop-filter: blur(20px); display: flex; align-items: center; padding: 0 15px; z-index: 1000000; }
-        #start-btn { width: 34px; height: 34px; background: var(--accent); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: 900; }
-        #clock { margin-left: auto; color: white; font-size: 14px; }
-        .online-count { font-size: 10px; background: var(--success); color: white; padding: 2px 6px; border-radius: 10px; margin-left: 10px; }
-    </style>
-</head>
-<body onload="checkAutoLogin()">
-
-<div id="login-screen">
-    <div class="login-box">
-        <div style="font-size: 60px;">♊</div>
-        <h2>NOU OS</h2>
-        <input type="text" id="user-in" placeholder="Username" style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px;">
-        <input type="password" id="pass-in" placeholder="Password" style="width:100%; padding:12px; margin-bottom:20px; border-radius:8px;">
-        <button onclick="handleLogin()" style="width:100%; padding:12px; border-radius:8px; background:var(--accent); font-weight:bold; cursor:pointer;">ULAZ</button>
-    </div>
-</div>
-
-<div id="main-os">
-    <div id="desktop">
-        <div class="icon" ondblclick="openApp('nou-app')"><span>🏢</span><label>NOU Hub</label></div>
-        <div class="icon" ondblclick="openApp('chat-win')"><span>💬</span><label>Tim Chat</label></div>
-        <div class="icon" ondblclick="openApp('settings-win')"><span>⚙️</span><label>Postavke</label></div>
-        <div class="icon" ondblclick="logout()"><span>🚪</span><label>Odjava</label></div>
-    </div>
-
-    <div id="chat-win" class="window" style="width: 400px; height: 500px; left: 500px; top: 100px;">
-        <div class="window-header" onmousedown="focusWin('chat-win')">
-            <span class="win-title">💬 Chat & Statusi</span>
-            <div class="win-close" onclick="closeApp('chat-win')"></div>
-        </div>
-        <div id="chat-messages"></div>
-        <div style="padding: 10px; border-top: 1px solid #eee; display: flex; gap: 10px;">
-            <input type="text" id="chat-input" placeholder="Poruka..." style="flex-grow:1; padding:8px;" onkeypress="if(event.key==='Enter') sendChatMessage()">
-            <button onclick="sendChatMessage()" style="padding:8px 15px; background:var(--accent); border:none; cursor:pointer;">></button>
-        </div>
-    </div>
-
-    <div id="nou-app" class="window" style="width: 550px; height: 500px; left: 50px; top: 50px;">
-        <div class="window-header" onmousedown="focusWin('nou-app')">
-            <span class="win-title">🏢 NOU Management</span>
-            <div class="win-close" onclick="closeApp('nou-app')"></div>
-        </div>
-        <div id="nou-users" class="nou-body" style="padding:20px;">
-            <h3>Korisnici & Status</h3>
-            <div id="admin-tools" style="display:none; margin-bottom:15px; background:#f0f0f0; padding:10px; border-radius:8px;">
-                 <input type="text" id="new-user-name" placeholder="User" style="width:80px;">
-                 <input type="text" id="new-user-pass" placeholder="Pass" style="width:80px;">
-                 <button onclick="createNewUser()">Dodaj</button>
-            </div>
-            <table style="width:100%;" id="user-table"></table>
-        </div>
-    </div>
-
-    <div id="settings-win" class="window" style="width: 350px; height: 320px; left: 300px; top: 200px;">
-        <div class="window-header" onmousedown="focusWin('settings-win')">
-            <span class="win-title">Personalizacija</span>
-            <div class="win-close" onclick="closeApp('settings-win')"></div>
-        </div>
-        <div style="padding:20px;">
-            <label>Pozadina URL:</label><input type="text" id="set-bg" style="width:100%; margin:10px 0;"><br>
-            <label>Boja Akcenta:</label><input type="color" id="set-color" style="width:100%; margin:10px 0;"><br>
-            <button onclick="saveUserSettings()" style="width:100%; padding:10px; background:var(--accent); font-weight:bold; cursor:pointer;">SAČUVAJ</button>
-        </div>
-    </div>
-
-    <div id="taskbar">
-        <div id="start-btn">♊</div>
-        <div style="margin-left:15px; color:white; font-size:12px;"><b id="taskbar-user"></b></div>
-        <div class="online-count" id="live-count">1 Online</div>
-        <div id="clock">00:00:00</div>
-    </div>
-</div>
-
-<script>
+    // Globalne varijable
     const DEFAULT_BG = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920";
     const DEFAULT_ACCENT = "#00d4ff";
-
-    let userDB = { "admin": { pass: "admin123", role: "admin" } };
-    let chatHistory = [];
-    let userPrefs = {};
-    let onlineStatus = {}; // Globalni objekat statusa
+    let userDB = {};
     let session = { user: null };
 
-    function checkAutoLogin() {
-        if(localStorage.getItem('os_global_users')) userDB = JSON.parse(localStorage.getItem('os_global_users'));
-        if(localStorage.getItem('os_global_chat')) chatHistory = JSON.parse(localStorage.getItem('os_global_chat'));
-        if(localStorage.getItem('os_personal_prefs')) userPrefs = JSON.parse(localStorage.getItem('os_personal_prefs'));
-        if(localStorage.getItem('os_online_status')) onlineStatus = JSON.parse(localStorage.getItem('os_online_status'));
+    // --- SINHRONIZACIJA PODATAKA ---
 
-        const activeUser = localStorage.getItem('os_active_session');
-        if (activeUser && userDB[activeUser]) { 
-            session.user = activeUser; 
-            updateStatus(true);
-            bootOS(); 
+    // Slušaj korisnike
+    onValue(ref(db, 'users'), (snapshot) => {
+        userDB = snapshot.val() || { "admin": { pass: "admin123", role: "admin" } };
+        renderUserList();
+        checkAutoLogin();
+    });
+
+    // Slušaj Chat
+    onValue(ref(db, 'chat'), (snapshot) => {
+        const data = snapshot.val();
+        renderChat(data ? Object.values(data) : []);
+    });
+
+    // Slušaj Online statuse
+    onValue(ref(db, 'online'), (snapshot) => {
+        const onlineStatus = snapshot.val() || {};
+        const now = Date.now();
+        let count = 0;
+        
+        for (let u in onlineStatus) {
+            if (now - onlineStatus[u] < 15000) count++;
         }
-    }
+        document.getElementById('live-count').innerText = `${count} Online`;
+        renderUserList(onlineStatus);
+    });
 
-    function handleLogin() {
+    // --- FUNKCIJE SISTEMA ---
+
+    window.handleLogin = function() {
         const u = document.getElementById('user-in').value;
         const p = document.getElementById('pass-in').value;
         if (userDB[u] && userDB[u].pass === p) {
             session.user = u;
             localStorage.setItem('os_active_session', u);
-            updateStatus(true);
             bootOS();
-        } else { alert("Greška!"); }
+            updateStatus(true);
+        } else { alert("Pogrešni podaci!"); }
+    };
+
+    function checkAutoLogin() {
+        const activeUser = localStorage.getItem('os_active_session');
+        if (activeUser && userDB[activeUser] && !session.user) {
+            session.user = activeUser;
+            bootOS();
+            updateStatus(true);
+        }
     }
 
     function bootOS() {
@@ -169,121 +78,83 @@
         document.getElementById('main-os').style.display = 'block';
         document.getElementById('taskbar-user').innerText = session.user;
         
-        const myPrefs = userPrefs[session.user] || { bg: DEFAULT_BG, color: DEFAULT_ACCENT };
-        document.body.style.backgroundImage = `url('${myPrefs.bg}')`;
-        document.documentElement.style.setProperty('--accent', myPrefs.color);
+        // Primeni preferencije (mogu se isto dodati u Firebase kasnije)
+        document.body.style.backgroundImage = `url('${DEFAULT_BG}')`;
         
-        if (userDB[session.user].role === 'admin') document.getElementById('admin-tools').style.display = 'block';
-        
-        renderChat();
-        renderUserList();
-        syncLive();
-    }
-
-    // Ažuriranje statusa (Online/Offline)
-    function updateStatus(isOnline) {
-        onlineStatus = JSON.parse(localStorage.getItem('os_online_status') || '{}');
-        if (isOnline) {
-            onlineStatus[session.user] = Date.now(); // Čuvamo timestamp
-        } else {
-            delete onlineStatus[session.user];
+        if (userDB[session.user].role === 'admin') {
+            document.getElementById('admin-tools').style.display = 'block';
         }
-        localStorage.setItem('os_online_status', JSON.stringify(onlineStatus));
     }
 
-    // Sinhronizacija uživo (svake 3 sekunde)
-    function syncLive() {
-        setInterval(() => {
-            // Osveži podatke iz memorije
-            onlineStatus = JSON.parse(localStorage.getItem('os_online_status') || '{}');
-            chatHistory = JSON.parse(localStorage.getItem('os_global_chat') || '[]');
-            
-            // Očisti ljude koji nisu refreshovali status duže od 10 sekundi (timeout)
-            const now = Date.now();
-            let count = 0;
-            for (let u in onlineStatus) {
-                if (now - onlineStatus[u] > 10000) delete onlineStatus[u];
-                else count++;
-            }
-            localStorage.setItem('os_online_status', JSON.stringify(onlineStatus));
-            
-            document.getElementById('live-count').innerText = `${count} Online`;
-            if (session.user) updateStatus(true); // Javi da sam još tu
-            renderChat();
-            renderUserList();
-        }, 3000);
+    function updateStatus(isOnline) {
+        if (!session.user) return;
+        const statusRef = ref(db, 'online/' + session.user);
+        if (isOnline) {
+            set(statusRef, Date.now());
+        } else {
+            remove(statusRef);
+        }
     }
 
-    function renderChat() {
-        const box = document.getElementById('chat-messages');
-        let html = '';
-        chatHistory.forEach(m => {
-            const isOnline = onlineStatus[m.sender] ? 'status-online' : '';
-            html += `<div class="msg ${m.sender === session.user ? 'msg-me' : 'msg-other'}">
-                <span class="status-dot ${isOnline}"></span><b>${m.sender}</b>: ${m.text}
-            </div>`;
+    // Heartbeat (javi da si online svake 10s)
+    setInterval(() => updateStatus(true), 10000);
+
+    window.sendChatMessage = function() {
+        const input = document.getElementById('chat-input');
+        if(!input.value.trim()) return;
+        
+        const chatRef = ref(db, 'chat');
+        push(chatRef, {
+            sender: session.user,
+            text: input.value,
+            time: Date.now()
         });
-        box.innerHTML = html;
+        input.value = '';
+    };
+
+    function renderChat(history) {
+        const box = document.getElementById('chat-messages');
+        box.innerHTML = history.map(m => `
+            <div class="msg ${m.sender === session.user ? 'msg-me' : 'msg-other'}">
+                <b>${m.sender}</b>: ${m.text}
+            </div>
+        `).join('');
         box.scrollTop = box.scrollHeight;
     }
 
-    function renderUserList() {
+    function renderUserList(onlineStatus = {}) {
         const table = document.getElementById('user-table');
+        if (!table) return;
         let html = '<tr><th>Korisnik</th><th>Status</th></tr>';
         Object.keys(userDB).forEach(u => {
-            const isOnline = onlineStatus[u] ? '<span style="color:green">● Online</span>' : '<span style="color:gray">Offline</span>';
-            html += `<tr><td>${u}</td><td>${isOnline}</td></tr>`;
+            const isOnline = (Date.now() - (onlineStatus[u] || 0) < 15000);
+            html += `<tr><td>${u}</td><td>${isOnline ? '<span style="color:green">● Online</span>' : '<span style="color:gray">Offline</span>'}</td></tr>`;
         });
         table.innerHTML = html;
     }
 
-    function sendChatMessage() {
-        const input = document.getElementById('chat-input');
-        if(!input.value.trim()) return;
-        chatHistory.push({ sender: session.user, text: input.value });
-        localStorage.setItem('os_global_chat', JSON.stringify(chatHistory));
-        input.value = '';
-        renderChat();
-    }
-
-    function saveUserSettings() {
-        const b = document.getElementById('set-bg').value || DEFAULT_BG;
-        const c = document.getElementById('set-color').value;
-        userPrefs[session.user] = { bg: b, color: c };
-        localStorage.setItem('os_personal_prefs', JSON.stringify(userPrefs));
-        bootOS();
-    }
-
-    function logout() {
-        updateStatus(false);
-        localStorage.removeItem('os_active_session');
-        location.reload();
-    }
-
-    /* SISTEMSKI ALATI */
-    function openApp(id) { document.getElementById(id).style.display = 'flex'; focusWin(id); }
-    function closeApp(id) { document.getElementById(id).style.display = 'none'; }
-    function focusWin(id) { document.getElementById(id).style.zIndex = Math.floor(Date.now()/1000); }
-    function createNewUser() {
+    window.createNewUser = function() {
         const n = document.getElementById('new-user-name').value;
         const p = document.getElementById('new-user-pass').value;
         if(n && p) {
-            userDB[n] = { pass: p, role: 'user' };
-            localStorage.setItem('os_global_users', JSON.stringify(userDB));
-            renderUserList();
+            update(ref(db, 'users/' + n), { pass: p, role: 'user' });
+            alert("Korisnik dodat!");
         }
-    }
-    setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
+    };
 
-    // Draggable
-    document.querySelectorAll('.window-header').forEach(h => {
-        h.onmousedown = (e) => {
-            let win = h.parentElement; focusWin(win.id);
-            let ox = e.clientX - win.offsetLeft, oy = e.clientY - win.offsetTop;
-            document.onmousemove = (e) => { win.style.left = (e.clientX - ox) + 'px'; win.style.top = (e.clientY - oy) + 'px'; }
-            document.onmouseup = () => document.onmousemove = null;
-        }
-    });
+    window.logout = function() {
+        updateStatus(false);
+        localStorage.removeItem('os_active_session');
+        location.reload();
+    };
+
+    // UI interakcije moraju biti window. funkcije zbog type="module"
+    window.openApp = (id) => { document.getElementById(id).style.display = 'flex'; };
+    window.closeApp = (id) => { document.getElementById(id).style.display = 'none'; };
+
+    // Sat
+    setInterval(() => { 
+        if(document.getElementById('clock')) 
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString(); 
+    }, 1000);
 </script>
-</body>
-</html>
